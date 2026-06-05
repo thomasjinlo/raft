@@ -18,6 +18,11 @@ spec:
         - name: raft-server
           image: raft-server:latest
           imagePullPolicy: IfNotPresent
+          env:
+            - name: POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
           ports:
             - containerPort: 8080
               name: server-port
