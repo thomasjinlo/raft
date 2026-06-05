@@ -43,6 +43,8 @@ graph LR
     classDef backend fill:#fff3e0,stroke:#e65100;
     class AD,RC,LS,TL,AD1,RC1,LS1,TL1,AD2,RC2,LS2,TL2 raft;
     class BE0,BE1,BE2 backend;
+
+%% Legend: blue = raft-proxy process, orange = separate backend process
 ```
 
 | Component | Process | Communication with other components |
@@ -63,32 +65,32 @@ graph LR
 sequenceDiagram
     autonumber
 
-    box Client Process
+    box "Client Process"
         participant C as Client
     end
 
-    box Node 0 - Leader
-        participant AD0 as Adapter [Raft Proxy]
-        participant RC0 as Raft Core [Raft Proxy]
-        participant LS0 as Log Storage [Raft Proxy]
-        participant TL0 as Transport [Raft Proxy]
-        participant BE0 as Backend App [Backend :3000]
+    box "Node 0 - Leader"
+        participant AD0 as "Adapter (raft-proxy)"
+        participant RC0 as "Raft Core (raft-proxy)"
+        participant LS0 as "Log Storage (raft-proxy)"
+        participant TL0 as "Transport (raft-proxy)"
+        participant BE0 as "Backend App (backend :3000)"
     end
 
-    box Node 1 - Follower
-        participant TF1 as Transport [Raft Proxy]
-        participant LF1 as Log Storage [Raft Proxy]
-        participant RF1 as Raft Core [Raft Proxy]
-        participant AD1 as Adapter [Raft Proxy]
-        participant BE1 as Backend App [Backend :3000]
+    box "Node 1 - Follower"
+        participant TF1 as "Transport (raft-proxy)"
+        participant LF1 as "Log Storage (raft-proxy)"
+        participant RF1 as "Raft Core (raft-proxy)"
+        participant AD1 as "Adapter (raft-proxy)"
+        participant BE1 as "Backend App (backend :3000)"
     end
 
-    box Node 2 - Follower
-        participant TF2 as Transport [Raft Proxy]
-        participant LF2 as Log Storage [Raft Proxy]
-        participant RF2 as Raft Core [Raft Proxy]
-        participant AD2 as Adapter [Raft Proxy]
-        participant BE2 as Backend App [Backend :3000]
+    box "Node 2 - Follower"
+        participant TF2 as "Transport (raft-proxy)"
+        participant LF2 as "Log Storage (raft-proxy)"
+        participant RF2 as "Raft Core (raft-proxy)"
+        participant AD2 as "Adapter (raft-proxy)"
+        participant BE2 as "Backend App (backend :3000)"
     end
 
     Note over C,AD0: Extract & append to log (in-process calls)
@@ -133,11 +135,6 @@ sequenceDiagram
     AD0-->>C: HTTP 200 OK {id:"42"}
 
     Note over C,BE0: All 3 backends now have the entry applied
-
-    classDef raft fill:#e1f5fe,stroke:#01579b;
-    classDef backend fill:#fff3e0,stroke:#e65100;
-    class AD0,RC0,LS0,TL0,TF1,LF1,RF1,AD1,TF2,LF2,RF2,AD2 raft;
-    class BE0,BE1,BE2 backend;
 ```
 
 ## Read Request Flows
@@ -150,13 +147,13 @@ Any node — leader or follower — can serve stale reads directly from its loca
 sequenceDiagram
     autonumber
 
-    box Client Process
+    box "Client Process"
         participant C as Client
     end
 
-    box Any Node - Leader or Follower
-        participant AD as Adapter [Raft Proxy]
-        participant BE as Backend App [Backend :3000]
+    box "Any Node - Leader or Follower"
+        participant AD as "Adapter (raft-proxy)"
+        participant BE as "Backend App (backend :3000)"
     end
 
     Note over C,BE: Fast read - no consensus, may return stale data
@@ -165,11 +162,6 @@ sequenceDiagram
     AD->>BE: Unix socket (cross-process)
     BE-->>AD: {id:"42", name:"..."}
     AD-->>C: HTTP 200 {id:"42", name:"..."}
-
-    classDef raft fill:#e1f5fe,stroke:#01579b;
-    classDef backend fill:#fff3e0,stroke:#e65100;
-    class AD raft;
-    class BE backend;
 ```
 
 - **Latency:** ~0.1ms (Unix socket only, no network stack)
