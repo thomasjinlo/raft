@@ -1,5 +1,8 @@
 # Raft Proxy - Request Lifecycle
 
+Legend: [Raft Proxy] = raft-proxy process | [Backend :3000] = separate backend process
+Arrows between different-colored participants = protobuf/capnproto over Unix socket
+
 ## Process Ownership Per Node
 
 Each node runs **two processes** on the same host. Components within a process communicate via function calls (zero IPC overhead).
@@ -7,39 +10,27 @@ Each node runs **two processes** on the same host. Components within a process c
 ```mermaid
 graph LR
     subgraph "Node 0"
-        subgraph "Raft Proxy Process"
-            AD[Adapter]
-            RC[Raft Core]
-            LS[Log Storage]
-            TL[Transport]
-        end
-        subgraph "Backend Process :3000"
-            BE0[Backend App - Node 0]
-        end
+        AD[Adapter]
+        RC[Raft Core]
+        LS[Log Storage]
+        TL[Transport]
+        BE0["Backend App [Backend :3000]"]
     end
 
     subgraph "Node 1"
-        subgraph "Raft Proxy Process"
-            AD1[Adapter]
-            RC1[Raft Core]
-            LS1[Log Storage]
-            TL1[Transport]
-        end
-        subgraph "Backend Process :3000"
-            BE1[Backend App - Node 1]
-        end
+        AD1[Adapter]
+        RC1[Raft Core]
+        LS1[Log Storage]
+        TL1[Transport]
+        BE1["Backend App [Backend :3000]"]
     end
 
     subgraph "Node 2"
-        subgraph "Raft Proxy Process"
-            AD2[Adapter]
-            RC2[Raft Core]
-            LS2[Log Storage]
-            TL2[Transport]
-        end
-        subgraph "Backend Process :3000"
-            BE2[Backend App - Node 2]
-        end
+        AD2[Adapter]
+        RC2[Raft Core]
+        LS2[Log Storage]
+        TL2[Transport]
+        BE2["Backend App [Backend :3000]"]
     end
 
     AD <-->|"Unix socket"| BE0
@@ -47,6 +38,11 @@ graph LR
     AD2 <-->|"Unix socket"| BE2
     TL <-->|"TCP RPC"| TL1
     TL <-->|"TCP RPC"| TL2
+
+    classDef raft fill:#e1f5fe,stroke:#01579b;
+    classDef backend fill:#fff3e0,stroke:#e65100;
+    class AD,RC,LS,TL,AD1,RC1,LS1,TL1,AD2,RC2,LS2,TL2 raft;
+    class BE0,BE1,BE2 backend;
 ```
 
 | Component | Process | Communication with other components |
@@ -71,40 +67,28 @@ sequenceDiagram
         participant C as Client
     end
 
-    box Node 0 (Leader)
-        box Raft Proxy Process
-            participant AD0 as Adapter
-            participant RC0 as Raft Core
-            participant LS0 as Log Storage
-            participant TL0 as Transport
-        end
-        box Backend Process :3000
-            participant BE0 as Backend App
-        end
+    box Node 0 - Leader
+        participant AD0 as Adapter [Raft Proxy]
+        participant RC0 as Raft Core [Raft Proxy]
+        participant LS0 as Log Storage [Raft Proxy]
+        participant TL0 as Transport [Raft Proxy]
+        participant BE0 as Backend App [Backend :3000]
     end
 
-    box Node 1 (Follower)
-        box Raft Proxy Process
-            participant TF1 as Transport
-            participant LF1 as Log Storage
-            participant RF1 as Raft Core
-            participant AD1 as Adapter
-        end
-        box Backend Process :3000
-            participant BE1 as Backend App
-        end
+    box Node 1 - Follower
+        participant TF1 as Transport [Raft Proxy]
+        participant LF1 as Log Storage [Raft Proxy]
+        participant RF1 as Raft Core [Raft Proxy]
+        participant AD1 as Adapter [Raft Proxy]
+        participant BE1 as Backend App [Backend :3000]
     end
 
-    box Node 2 (Follower)
-        box Raft Proxy Process
-            participant TF2 as Transport
-            participant LF2 as Log Storage
-            participant RF2 as Raft Core
-            participant AD2 as Adapter
-        end
-        box Backend Process :3000
-            participant BE2 as Backend App
-        end
+    box Node 2 - Follower
+        participant TF2 as Transport [Raft Proxy]
+        participant LF2 as Log Storage [Raft Proxy]
+        participant RF2 as Raft Core [Raft Proxy]
+        participant AD2 as Adapter [Raft Proxy]
+        participant BE2 as Backend App [Backend :3000]
     end
 
     Note over C,AD0: Extract & append to log (in-process calls)
@@ -128,11 +112,11 @@ sequenceDiagram
     TF2->>RF2: entry persisted, commit_index=42
 
     RF1->>AD1: apply committed entry 42
-    AD1->>BE1: protobuf over Unix socket (localhost)
+    AD1->>BE1: Unix socket (cross-process)
     BE1-->>AD1: OK
 
     RF2->>AD2: apply committed entry 42
-    AD2->>BE2: protobuf over Unix socket (localhost)
+    AD2->>BE2: Unix socket (cross-process)
     BE2-->>AD2: OK
 
     Note over TL0,RC0: Leader receives majority ACKs, commits
@@ -142,13 +126,18 @@ sequenceDiagram
 
     Note over RC0,BE0: Leader applies to own backend too
     RC0->>AD0: apply committed entry 42
-    AD0->>BE0: protobuf over Unix socket (localhost)
+    AD0->>BE0: Unix socket (cross-process)
     BE0-->>AD0: OK {id:"42"}
 
     Note over AD0,C: Route response back to client
     AD0-->>C: HTTP 200 OK {id:"42"}
 
     Note over C,BE0: All 3 backends now have the entry applied
+
+    classDef raft fill:#e1f5fe,stroke:#01579b;
+    classDef backend fill:#fff3e0,stroke:#e65100;
+    class AD0,RC0,LS0,TL0,TF1,LF1,RF1,AD1,TF2,LF2,RF2,AD2 raft;
+    class BE0,BE1,BE2 backend;
 ```
 
 ## Read Request Flows
@@ -165,21 +154,22 @@ sequenceDiagram
         participant C as Client
     end
 
-    box Any Node (leader or follower)
-        box Raft Proxy Process
-            participant AD as Adapter
-        end
-        box Backend Process :3000
-            participant BE as Backend App
-        end
+    box Any Node - Leader or Follower
+        participant AD as Adapter [Raft Proxy]
+        participant BE as Backend App [Backend :3000]
     end
 
     Note over C,BE: Fast read - no consensus, may return stale data
 
     C->>AD: GET /api/data/42
-    AD->>BE: protobuf over Unix socket (localhost)
+    AD->>BE: Unix socket (cross-process)
     BE-->>AD: {id:"42", name:"..."}
     AD-->>C: HTTP 200 {id:"42", name:"..."}
+
+    classDef raft fill:#e1f5fe,stroke:#01579b;
+    classDef backend fill:#fff3e0,stroke:#e65100;
+    class AD raft;
+    class BE backend;
 ```
 
 - **Latency:** ~0.1ms (Unix socket only, no network stack)
@@ -199,13 +189,9 @@ sequenceDiagram
     end
 
     box Leader Node
-        box Raft Proxy Process
-            participant AD2 as Adapter
-            participant RC2 as Raft Core
-        end
-        box Backend Process :3000
-            participant BE2 as Backend App
-        end
+        participant AD2 as Adapter [Raft Proxy]
+        participant RC2 as Raft Core [Raft Proxy]
+        participant BE2 as Backend App [Backend :3000]
     end
 
     Note over C,AD2: Client sends linearizable read to leader
@@ -217,12 +203,17 @@ sequenceDiagram
 
     RC2->>RC2: current commit_index=42, still leader
     RC2->>AD2: all entries up to 42 applied locally
-    AD2->>BE2: protobuf over Unix socket (localhost)
+    AD2->>BE2: Unix socket (cross-process)
     BE2-->>AD2: {id:"42", name:"..."}
 
     Note over AD2,C: Response returned directly to client
 
     AD2-->>C: HTTP 200 {id:"42", name:"..."}
+
+    classDef raft fill:#e1f5fe,stroke:#01579b;
+    classDef backend fill:#fff3e0,stroke:#e65100;
+    class AD2,RC2 raft;
+    class BE2 backend;
 ```
 
 - **Latency:** ~0.1ms (Unix socket) + leadership check overhead, typically <1ms on leader
