@@ -43,9 +43,9 @@ graph LR
     classDef backend fill:#fff3e0,stroke:#e65100;
     class AD,RC,LS,TL,AD1,RC1,LS1,TL1,AD2,RC2,LS2,TL2 raft;
     class BE0,BE1,BE2 backend;
+```
 
 %% Legend: blue = raft-proxy process, orange = separate backend process
-```
 
 | Component | Process | Communication with other components |
 |---|---|---|
@@ -176,14 +176,14 @@ Linearizable reads must go to the leader. If a client hits a follower with a lin
 sequenceDiagram
     autonumber
 
-    box Client Process
+    box "Client Process"
         participant C as Client
     end
 
-    box Leader Node
-        participant AD2 as Adapter [Raft Proxy]
-        participant RC2 as Raft Core [Raft Proxy]
-        participant BE2 as Backend App [Backend :3000]
+    box "Leader Node"
+        participant AD2 as "Adapter (raft-proxy)"
+        participant RC2 as "Raft Core (raft-proxy)"
+        participant BE2 as "Backend App (backend :3000)"
     end
 
     Note over C,AD2: Client sends linearizable read to leader
@@ -201,11 +201,6 @@ sequenceDiagram
     Note over AD2,C: Response returned directly to client
 
     AD2-->>C: HTTP 200 {id:"42", name:"..."}
-
-    classDef raft fill:#e1f5fe,stroke:#01579b;
-    classDef backend fill:#fff3e0,stroke:#e65100;
-    class AD2,RC2 raft;
-    class BE2 backend;
 ```
 
 - **Latency:** ~0.1ms (Unix socket) + leadership check overhead, typically <1ms on leader
