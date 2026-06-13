@@ -33,7 +33,7 @@ sequenceDiagram
     R0->>L0: fsync entry 42
     L0-->>R0: OK
 
-    Note over R0,BE2: Replicate to followers (parallel)
+    Note over R0,R2: Replicate to followers (parallel)
 
     R0->>R1: TCP: AppendEntries(prev:41, entries:[{idx:42}])
     R0->>R2: TCP: AppendEntries(prev:41, entries:[{idx:42}])
@@ -53,7 +53,7 @@ sequenceDiagram
     R0->>BE0: Unix socket: apply entry 42
     BE0-->>R0: OK {id:"42"}
 
-    Note over R0,BE2: Next heartbeat carries commit, followers apply
+    Note over R0,R2: Next heartbeat carries commit
 
     R0->>R1: TCP: AppendEntries{commit:42}
     R0->>R2: TCP: AppendEntries{commit:42}
