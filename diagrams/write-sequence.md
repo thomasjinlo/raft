@@ -8,33 +8,36 @@ sequenceDiagram
         participant C as Client
     end
 
-    box "Node 0 (Leader)"
-        box "Raft Proxy"
-            participant AD0 as Adapter
-            participant RC0 as Raft Core
-            participant LS0 as Log Storage
-            participant TL0 as Transport
-        end
+    box "Node 0 (Leader) - Raft Proxy"
+        participant AD0 as Adapter
+        participant RC0 as Raft Core
+        participant LS0 as Log Storage
+        participant TL0 as Transport
+    end
+
+    box "Node 0 (Leader) - Backend Process"
         participant BE0 as Backend
     end
 
-    box "Node 1 (Follower)"
-        box "Raft Proxy"
-            participant TL1 as Transport
-            participant LS1 as Log Storage
-            participant RC1 as Raft Core
-            participant AD1 as Adapter
-        end
+    box "Node 1 (Follower) - Raft Proxy"
+        participant TL1 as Transport
+        participant LS1 as Log Storage
+        participant RC1 as Raft Core
+        participant AD1 as Adapter
+    end
+
+    box "Node 1 (Follower) - Backend Process"
         participant BE1 as Backend
     end
 
-    box "Node 2 (Follower)"
-        box "Raft Proxy"
-            participant TL2 as Transport
-            participant LS2 as Log Storage
-            participant RC2 as Raft Core
-            participant AD2 as Adapter
-        end
+    box "Node 2 (Follower) - Raft Proxy"
+        participant TL2 as Transport
+        participant LS2 as Log Storage
+        participant RC2 as Raft Core
+        participant AD2 as Adapter
+    end
+
+    box "Node 2 (Follower) - Backend Process"
         participant BE2 as Backend
     end
 
