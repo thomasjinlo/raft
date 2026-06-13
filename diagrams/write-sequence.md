@@ -8,36 +8,27 @@ sequenceDiagram
         participant C as Client
     end
 
-    box "Node 0 (Leader) - Raft Proxy"
-        participant AD0 as Adapter
-        participant RC0 as Raft Core
-        participant LS0 as Log Storage
-        participant TL0 as Transport
-    end
-
-    box "Node 0 (Leader) - Backend Process"
+    box "Node 0 (Leader)"
+        participant AD0 as "Adapter (proxy)"
+        participant RC0 as "Raft Core (proxy)"
+        participant LS0 as "Log Storage (proxy)"
+        participant TL0 as "Transport (proxy)"
         participant BE0 as Backend
     end
 
-    box "Node 1 (Follower) - Raft Proxy"
-        participant TL1 as Transport
-        participant LS1 as Log Storage
-        participant RC1 as Raft Core
-        participant AD1 as Adapter
-    end
-
-    box "Node 1 (Follower) - Backend Process"
+    box "Node 1 (Follower)"
+        participant TL1 as "Transport (proxy)"
+        participant LS1 as "Log Storage (proxy)"
+        participant RC1 as "Raft Core (proxy)"
+        participant AD1 as "Adapter (proxy)"
         participant BE1 as Backend
     end
 
-    box "Node 2 (Follower) - Raft Proxy"
-        participant TL2 as Transport
-        participant LS2 as Log Storage
-        participant RC2 as Raft Core
-        participant AD2 as Adapter
-    end
-
-    box "Node 2 (Follower) - Backend Process"
+    box "Node 2 (Follower)"
+        participant TL2 as "Transport (proxy)"
+        participant LS2 as "Log Storage (proxy)"
+        participant RC2 as "Raft Core (proxy)"
+        participant AD2 as "Adapter (proxy)"
         participant BE2 as Backend
     end
 
@@ -73,7 +64,7 @@ sequenceDiagram
     BE0-->>AD0: OK {id:"42"}
     deactivate AD0
 
-    Note over TL1,BE2: Next heartbeat carries commit; followers apply
+    Note over TL1,BE2: Next heartbeat carries commit, followers apply
 
     RC0->>TL0: heartbeat(commit_index:42)
     TL0->>TL1: TCP: AppendEntries{commit:42}
